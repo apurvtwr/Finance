@@ -1,4 +1,6 @@
 import os
+from datetime import date
+from pathlib import Path
 from zipfile import ZipFile
 import requests
 import pandas as pd
@@ -37,21 +39,25 @@ class MasterData :
 class Edgar :
     EDGAR_PREFIX = "https://www.sec.gov/Archives/"
     
-    def __init__(self, dest_folder) :
+    def __init__(self, dest_folder:Path=Path("/tmp/")) :
         self._dest_folder = dest_folder
     
     def _download_master_data(self, year:int, quarter:int) :
         assert quarter in range(1, 5), "quarter can be in [1,4]"
         
         src_path = f"{self.EDGAR_PREFIX}edgar/full-index/{year}/QTR{quarter}/master.zip"
-        dest_path = f"{self._dest_folder}/{year}-QTR{quarter}.zip"
+        dest_path = self._dest_folder/f"{year}-QTR{quarter}.zip"
         if not os.path.exists(dest_path) :
             _response = requests.get(src_path, allow_redirects=True)
             open(dest_path, 'wb').write(_response.content)
         
         return dest_path
     
-    def get_master_data(self, year:int, quarter:int) :
+    def get_master_data(self, year:int=None, quarter:int=None) :
+        if year is None :
+            year = date.today().year
+        if quarter is None :
+            quarter = date.today().month // 3 + 1
         dest_path = self._download_master_data(year, quarter)
         
         with ZipFile(dest_path) as master_zip:
